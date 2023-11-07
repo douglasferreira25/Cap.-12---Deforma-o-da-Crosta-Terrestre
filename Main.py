@@ -3,6 +3,8 @@ def entrada
 return
 
 def Solução
+
+print("alteracao")
 #''involving element integration, assembly, and solution''
 return
 
