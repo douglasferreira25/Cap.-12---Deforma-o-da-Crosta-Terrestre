@@ -15,28 +15,32 @@
 % solid mechanics rate formulation
 % 9-node quadrilaterals
 %-----------------------------------------
-clear
-seconds_per_year = 60*60*24*365 ;
-% physical parameters
-lx = 4 ; % length of x domain (m)
-lz = 1 ; % length of z domain (m)
-emod_v = [1 1 1 1 ]*1e11 ; % Young's modulus (Pa)
-pois_v = [0.3 0.3 0.3 0.3 ] ; % Poisson's ratio
-smod_v = emod_v./(2*(1+pois_v)) ; % shear modulus (Pa)
-bmod_v = emod_v./(3*(1-2*pois_v)) ; % bulk modulus (Pa)
-visc_v = [ 1 1 100 100]*1e18 ; % shear viscosity (Pas)
-coh_v = 20*[1 1 1 0.9 ]*1e6 ; % cohesion (Pa)
-phi_v = ([1 1 1 1])*30*pi/180 ; % friction angle(radians)
-psi_v = [0 0 0 0] ; % dilation angle (radians)
-grav_v = [ 2700 2700 2700 2700 ]*9.8 ; % density*gravity
-bvel = 5e-3/seconds_per_year ; % boundary velocity (m/s)
-edot = bvel/lx ; % initial strain rate (1/s)
-plasticity= logical(0) ; % include/ignore plasticity (true/false)
-nst = 3 ; % number of stress/strain components
-% characteristic scales
-length_scale = lz ; % length scale
-stress_scale = max(smod_v) ; % stress_scale
-time_scale = 1/edot ; % time_scale
+import numpy as np
+
+# physical parameters
+lx = 4  # length of x domain (m)
+lz = 1  # length of z domain (m)
+emod_v = np.array([1, 1, 1, 1]) * 1e11  # Young's modulus (Pa)
+pois_v = np.array([0.3, 0.3, 0.3, 0.3])  # Poisson's ratio
+smod_v = emod_v / (2 * (1 + pois_v))  # shear modulus (Pa)
+bmod_v = emod_v / (3 * (1 - 2 * pois_v))  # bulk modulus (Pa)
+visc_v = np.array([1, 1, 100, 100]) * 1e18  # shear viscosity (Pas)
+coh_v = 20 * np.array([1, 1, 1, 0.9]) * 1e6  # cohesion (Pa)
+phi_v = np.array([1, 1, 1, 1]) * 30 * np.pi / 180  # friction angle(radians)
+psi_v = np.array([0, 0, 0, 0])  # dilation angle (radians)
+grav_v = np.array([2700, 2700, 2700, 2700]) * 9.8  # density*gravity
+seconds_per_year = 60 * 60 * 24 * 365
+bvel = 5e-3 / seconds_per_year  # boundary velocity (m/s)
+edot = bvel / lx  # initial strain rate (1/s)
+plasticity = False  # include/ignore plasticity (true/false)
+nst = 3  # number of stress/strain components
+
+# characteristic scales
+length_scale = lz  # length scale
+stress_scale = max(smod_v)  # stress_scale
+time_scale = 1 / edot  # time_scale
+
+#----------------------------------------------------------------------UNDER REVIEW----------------------
 % rescaled parameters
 emod_v = emod_v/stress_scale ;
 smod_v = smod_v/stress_scale ;
