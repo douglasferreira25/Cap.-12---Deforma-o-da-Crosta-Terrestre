@@ -1,6 +1,29 @@
-#--------------------------------------------------------------------------
-
-
+# import preprocess, process, posprocess
+# from preprocess import main
+# ndim, nod, nodes, conn, boundary = preprocess.main("geofem.txt")
+#
+# # analysis = "geomechanics"
+# #
+# # preprocess.read_asc_file("dem.asc")
+# #
+# # if analysis == "flowaroundfaults" :
+# #     process.flowaroundfaults(ndim, nod, nodes, conn, boundary)
+# #
+# # if analysis == "thermalanalysis" :
+# #     process.thermalanalysis(ndim, nod, nodes, conn, boundary)
+# #
+# # if analysis == "geomechanics" :
+# #     process.geomechanics(ndim, nod, nodes, conn, boundary)
+#
+#
+# #posprocess.main(ndim, nod, nodes, conn, boundary)
+#
+#
+#
+# #--------------------------------------------------------------------------
+#
+#
+#
 
 
 
@@ -9,12 +32,12 @@
 
 #----------------------------------------------
 #------------código a ser executado-----------
-%-------------------------------------------
-% Program: deformation_vep2d.m
-% 2D viscoelastoplastic plane strain deformation
-% solid mechanics rate formulation
-% 9-node quadrilaterals
-%-----------------------------------------
+#-------------------------------------------
+# Program: deformation_vep2d.m
+#% 2D viscoelastoplastic plane strain deformation
+# solid mechanics rate formulation
+# 9-node quadrilaterals
+#-----------------------------------------
 import numpy as np
 
 # physical parameters
@@ -103,7 +126,7 @@ for iel in range(nels):
         for k in range(2):
             inc += 1
             g[inc-1] = nf[k][num[i]-1]
-    g_g[:, iel] = g
+#    g_g[:, iel] = g
 #-----------------------------------------
 # define boundary conditions
 #-----------------------------------------
@@ -115,6 +138,7 @@ bzn = [i for i in range(nn) if g_coord[i][1] == lz]
 # fixed boundary equations along with their values
 bcdof = [nf[0][i] for i in bx0] + [nf[0][i] for i in bxn] + [nf[1][i] for i in bz0]
 bcval = [0 for i in bx0] + [-bvel for i in bxn] + [0 for i in bz0]
+print(g_coord)
 #------------------------------------------------------------
 # establish phases
 #-----------------------------------------------------------
@@ -137,7 +161,8 @@ g_coord = [[g_coord[i][0], g_coord[i][1]+dz*0.05*(random.random()-0.5)] if i in 
 # integration data and shape functions
 #----------------------------------------
 # local coordinates of Gauss integration points for nip=3x3
-points = [[-sqrt(0.6), sqrt(0.6), -sqrt(0.6)], [0, 0, sqrt(0.6)]]
+import math
+points = [[-math.sqrt(0.6), math.sqrt(0.6), -math.sqrt(0.6)], [0, 0, math.sqrt(0.6)]]
 # Gauss weights for nip=3x3
 w = [5/9, 8/9, 5/9]
 v = [[5/9*w[i] for i in range(3)], [8/9*w[i] for i in range(3)], [5/9*w[i] for i in range(3)]]
@@ -235,18 +260,18 @@ for n in range(ntime):
                 strain_rate = [sum([bee[i][j]*uv[j] for j in range(ntot)]) for i in range(nst)]  # strain rates
                 stress = [sum([dee[i][j]*strain_rate[j] for j in range(nst)]) + sum([dees[i][j]*tensor0[j][k][iel] for j in range(nst)]) for i in range(nst)]  # stresses
                 if plasticity:  # do only if plasticity included
-                    tau = ((1/4*(stress[0]-stress[1])**2+stress[2]**2)**(1/2))  # tau star
+                    tau = ((1/4*(stress[0]-stress[1])*2+stress[2]2)*(1/2))  # tau star
                     sigma = 1/2*(stress[0]+stress[1])  # sigma star
-                    F = tau + sigma*sin(phi)-coh*cos(phi)  # plastic yield function
+                    F = tau + sigma*math.sin(phi)-coh*math.cos(phi)  # plastic yield function
                     if F > 0:  # return stresses to yield surface
-                        if sigma <= coh/tan(phi):  # 'normal' case
-                            beta = abs(coh*cos(phi)-sin(phi)*sigma)/tau
+                        if sigma <= coh/math.tan(phi):  # 'normal' case
+                            beta = abs(coh*math.cos(phi)-math.sin(phi)*sigma)/tau
                             sxx_new = sigma + beta*(stress[0]-stress[1])/2
                             szz_new = sigma - beta*(stress[0]-stress[1])/2
                             sxz_new = beta*stress[2]
                         else:  # special treatment for corners of yield surface
-                            sxx_new = coh/tan(phi)
-                            szz_new = coh/tan(phi)
+                            sxx_new = coh/math.tan(phi)
+                            szz_new = coh/math.tan(phi)
                             sxz_new = 0
                         stress[0] = sxx_new
                         stress[1] = szz_new
@@ -313,17 +338,17 @@ for n in range(ntime):
     plt.figure(3)
     plt.clf()  # x-velocity
     plt.pcolor(xgrid, zgrid, u_solution)
-    plt.colormap('jet')
+    #plt.figure.colormap('jet')
     plt.colorbar()
-    plt.shading('interp')
+    #plt.shading('interp')
     plt.axis('equal')
     plt.title('x-velocity (mm/yr)')
     plt.figure(4)
     plt.clf()  # z-velocity
     plt.pcolor(xgrid, zgrid, v_solution)
-    plt.colormap('jet')
+    #plt.figure.colormap('jet')
     plt.colorbar()
-    plt.shading('interp')
+    #plt.shading('interp')
     plt.axis('equal')
     plt.title('z-velocity (mm/yr)')
     plt.figure(5)
@@ -334,7 +359,7 @@ for n in range(ntime):
         means = [(tensor[0][j][iel]+tensor[1][j][iel])/2 for j in range(nip)]
         nodevalues = [fun_s[j].dot(means) for j in range(8)]
         h = plt.fill([coord[i][0] for i in range(8)], [coord[i][1] for i in range(8)], [-nodevalues[i] for i in range(8)])
-        plt.set(h, 'linestyle', 'none')
+        #plt.set(h, 'linestyle', 'none')
     plt.plot([xgrid[i][0] for i in range(8)], [zgrid[i][0] for i in range(8)], 'Color', [0.8, 0.8, 0.8])
     plt.plot([xgrid[i][j] for i in range(8) for j in range(8)], [zgrid[i][j] for i in range(8) for j in range(8)], 'Color', [0.8, 0.8, 0.8])
     plt.axis('equal')
