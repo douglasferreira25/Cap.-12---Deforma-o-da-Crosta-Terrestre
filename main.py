@@ -1,3 +1,14 @@
+#--------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+#----------------------------------------------
+#------------código a ser executado-----------
 # import preprocess, process, posprocess
 # from preprocess import main
 # ndim, nod, nodes, conn, boundary = preprocess.main("geofem.txt")
@@ -86,9 +97,9 @@ nz = 2*nze+1  # n of nodes in z-direction
 nn = nx*nz  # total number of nodes
 dx = lx/nxe  # element size in x-direction
 dz = lz/nze  # element size in z-direction
-nod = 9  # number of nodes
+nod = 4  # number of nodes
 ndof = 2  # number of degrees of freedom
-ntot = nod + nod  # total degrees of freedom in an element
+ntot = nod * ndof  # total degrees of freedom in an element
 nip = 9  # number of integration points in an element
 eps = 1e-3  # convergence tolerance
 limit = 50  # maximum number of iterations
@@ -105,7 +116,17 @@ iel = 1
 g_num = []
 for i in range(1, nx, 2):
     for j in range(1, nz, 2):
-        g_num.append([gnumbers[j-1][i-1], gnumbers[j][i-1], gnumbers[j+1][i-1], gnumbers[j+1][i], gnumbers[j+1][i+1], gnumbers[j][i+1], gnumbers[j-1][i+1], gnumbers[j-1][i], gnumbers[j][i]])
+        g_num.append([
+            gnumbers[j-1][i-1], #node 1
+            gnumbers[j][i-1], # node 2
+            gnumbers[j+1][i-1], # node 3
+            gnumbers[j+1][i], # node 4
+            gnumbers[j+1][i+1], # node 5
+            gnumbers[j][i+1], # node 6
+            gnumbers[j-1][i+1], # node 7
+            gnumbers[j-1][i], # node 8
+            gnumbers[j][i] # node 9
+            ])
         iel += 1
 #-----------------------------------------
 # create global-local connection arrays
@@ -118,7 +139,7 @@ for n in range(nn):  # loop over all nodes
         nf[i][n] = sdof  # record the equation number for each node
 # equation numbering for each element
 g = [0 for i in range(ntot)]
-g_g = [[0 for i in range(nels)] for j in range(ntot)]
+g_g = np.array([[0 for i in range(nels)] for j in range(ntot)])
 for iel in range(nels):
     num = g_num[iel]  # extract nodes for the element
     inc = 0
@@ -162,16 +183,22 @@ g_coord = [[g_coord[i][0], g_coord[i][1]+dz*0.05*(random.random()-0.5)] if i in 
 #----------------------------------------
 # local coordinates of Gauss integration points for nip=3x3
 import math
-points = [[-math.sqrt(0.6), math.sqrt(0.6), -math.sqrt(0.6)], [0, 0, math.sqrt(0.6)]]
+points = np.array([[-math.sqrt(0.6), math.sqrt(0.6), -math.sqrt(0.6)], [0, 0, math.sqrt(0.6)]])
+#print(points.shape)
+points = np.tile(points,(1,3))
+print(points.shape)
+#erro detectado - só ha 2 vetores - é preciso 9 vetores
 # Gauss weights for nip=3x3
 w = [5/9, 8/9, 5/9]
 v = [[5/9*w[i] for i in range(3)], [8/9*w[i] for i in range(3)], [5/9*w[i] for i in range(3)]]
 wts = [v[i][j] for i in range(3) for j in range(3)]
 # evaluate shape functions and their derivatives
 # at integration points and save the results
-fun_s = [[0 for i in range(nip)] for j in range(nod)]
-der_s = [[[0 for i in range(nip)] for j in range(nod)] for k in range(ndof)]
-for k in range(nip):
+fun_s = np.zeros((nip,nod))
+#print(nod)
+der_s = np.zeros((ndof,nip,nod))
+for k in range(nod):
+    #print(nip, points)
     xi = points[0][k]
     eta = points[1][k]
     etam = eta - 1
@@ -185,17 +212,22 @@ for k in range(nip):
     # shape functions
     fun = [0.25*xi*xim*eta*etam, -0.5*xi*xim*etap*etam, 0.25*xi*xim*eta*etap, -0.5*xip*xim*eta*etap, 0.25*xi*xip*eta*etap, -0.5*xi*xip*etap*etam, 0.25*xi*xip*eta*etam, -0.5*xip*xim*eta*etam, xip*xim*etap*etam]
     # first derivatives of shape functions
-    der = [[0.25*x2m1*eta*etam, -0.5*x2m1*etap*etam, 0.25*x2m1*eta*etap, -xi*eta*etap, 0.25*x2p1*eta*etap, -0.5*x2p1*etap*etam, 0.25*x2p1*eta*etam, -xi*eta*etam, 2*xi*etap*etam], [0.25*xi*xim*e2m1, -xi*xim*eta, 0.25*xi*xim*e2p1, -0.5*xip*xim*e2p1, 0.25*xi*xip*e2p1, -xi*xip*eta, 0.25*xi*xip*e2m1, -0.5*xip*xim*e2m1, 2*xip*xim*eta]]
-    fun_s[:, k] = fun  # save shape functions
-    der_s[:, :, k] = der  # save derivatives
+    der = np.array([[0.25*x2m1*eta*etam, -0.5*x2m1*etap*etam, 0.25*x2m1*eta*etap, -xi*eta*etap, 0.25*x2p1*eta*etap, -0.5*x2p1*etap*etam, 0.25*x2p1*eta*etam, -xi*eta*etam, 2*xi*etap*etam], [0.25*xi*xim*e2m1, -xi*xim*eta, 0.25*xi*xim*e2p1, -0.5*xip*xim*e2p1, 0.25*xi*xip*e2p1, -xi*xip*eta, 0.25*xi*xip*e2m1, -0.5*xip*xim*e2m1, 2*xip*xim*eta]])
+    #print(fun_s,np.ndim(der_s))    
+    for i in range(nip):    
+        fun_s[i, k] = fun [i]  # save shape functions
+    for i in range(ndof):
+        for j in range (nip):
+            der_s[i,j,k] = der[i,j]  # save derivatives
+#print(der_s.shape)
 #-----------------------------------------
 # initialisation
 #-----------------------------------------
-lhs = [[0 for i in range(sdof)] for j in range(sdof)]  # global stiffness matrix
-b = [0 for i in range(sdof)]  # global rhs vector
-displ = [0 for i in range(sdof)]  # solution vector (velocities)
-tensor = [[[0 for i in range(nels)] for j in range(nip)] for k in range(nst)]  # stresses at integration points
-tensor0 = [[[0 for i in range(nels)] for j in range(nip)] for k in range(nst)]  # old stresses
+lhs = np.zeros((sdof, sdof))  # global stiffness matrix np.zeros((sdof, sdof)) # codigo antigo lhs = [[0 for i in range(sdof)] for j in range(sdof)]
+b = np.zeros(sdof)  # global rhs vector np.zeros(sdof)# codigo antigo b = [0 for i in range(sdof)]
+displ = np.zeros(sdof)  # solution vector (velocities) np.zeros(sdof) #displ = [0 for i in range(sdof)]
+tensor = np.zeros((nels,nip,nst))  # stresses at integration points np.zeros((nels,nip,nst)) #tensor = [[[0 for i in range(nels)] for j in range(nip)] for k in range(nst)]
+tensor0 = np.zeros((nels,nip,nst))  # old stresses np.zeros((nels,nip,nst))#tensor0 = [[[0 for i in range(nels)] for j in range(nip)] for k in range(nst)]
 #----------------------------------------------------
 # loading loop
 #----------------------------------------------------
@@ -218,7 +250,7 @@ for n in range(ntime):
         for iel in range(nels):  # sum over elements
             num = g_num[iel]  # list of element nodes
             g = g_g[:, iel]  # element equation numbers
-            coord = [g_coord[num[i]-1] for i in range(nod)]  # nodal coordinates
+            coord = np.array([g_coord[num[i]-1] for i in range(nod)])  # nodal coordinates
             KM = [[0 for i in range(ntot)] for j in range(ntot)]  # initialise stiffness matrix
             R = [0 for i in range(ntot)]  # initialise stress load vector
             uv = [displ[g[i]-1] for i in range(ntot)]  # current nodal velocities
@@ -247,7 +279,12 @@ for n in range(ntime):
                 fune[1::2] = fun  # shape function for z-dof only
                 # shape functions in local coords
                 der = der_s[:, :, k]
-                jac = [[sum([der[i][j]*coord[j][k] for j in range(nod)]) for k in range(2)] for i in range(ndof)]  # jacobian matrix
+                print(der)
+                print(coord)
+                #jac = np.array([[sum([der[i][j]*coord[j][k] for j in range(nod)]) for k in range(2)] for i in range(ndof)])  # jacobian matrix
+                #print(jac.shape)
+                jac = der@coord
+                #print(jac)
                 detjac = jac[0][0]*jac[1][1] - jac[0][1]*jac[1][0]  # det. of the Jacobian
                 dwt = detjac*wts[k]  # detjac x weight
                 invjac = [[jac[1][1]/detjac, -jac[0][1]/detjac], [-jac[1][0]/detjac, jac[0][0]/detjac]]  # inverse of the Jacobian
@@ -260,7 +297,7 @@ for n in range(ntime):
                 strain_rate = [sum([bee[i][j]*uv[j] for j in range(ntot)]) for i in range(nst)]  # strain rates
                 stress = [sum([dee[i][j]*strain_rate[j] for j in range(nst)]) + sum([dees[i][j]*tensor0[j][k][iel] for j in range(nst)]) for i in range(nst)]  # stresses
                 if plasticity:  # do only if plasticity included
-                    tau = ((1/4*(stress[0]-stress[1])*2+stress[2]2)*(1/2))  # tau star
+                    tau = ((1/4*(stress[0]-stress[1])*2+stress[2])*(1/2))  # tau star
                     sigma = 1/2*(stress[0]+stress[1])  # sigma star
                     F = tau + sigma*math.sin(phi)-coh*math.cos(phi)  # plastic yield function
                     if F > 0:  # return stresses to yield surface
