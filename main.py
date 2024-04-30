@@ -110,8 +110,11 @@ dt = 0.01  # time step (non dimensional)
 # computational mesh
 # define mesh (numbering in z direction)
 g_coord = [[(i-1)*dx/2, (j-1)*dz/2] for i in range(1, nx+1) for j in range(1, nz+1)]
+g_coord = np.array(g_coord)
+#print(g_coord)
 # establish node numbering numbering
 gnumbers = [[i for i in range(1, nx+1)] for j in range(1, nz+1)]
+gnumbers = np.array(gnumbers)
 iel = 1
 g_num = []
 for i in range(1, nx, 2):
@@ -128,6 +131,8 @@ for i in range(1, nx, 2):
             gnumbers[j][i] # node 9
             ])
         iel += 1
+g_num= np.array(g_num)
+print(g_num)
 #-----------------------------------------
 # create global-local connection arrays
 #-----------------------------------------
@@ -137,8 +142,10 @@ for n in range(nn):  # loop over all nodes
     for i in range(ndof):  # loop over each degree of freedom
         sdof += 1  # increment total number of equations
         nf[i][n] = sdof  # record the equation number for each node
+nf = np.array(nf)
 # equation numbering for each element
 g = [0 for i in range(ntot)]
+g = np.array(g)
 g_g = np.array([[0 for i in range(nels)] for j in range(ntot)])
 for iel in range(nels):
     num = g_num[iel]  # extract nodes for the element
@@ -152,14 +159,20 @@ for iel in range(nels):
 # define boundary conditions
 #-----------------------------------------
 # boundary nodes
-bx0 = [i for i in range(nn) if g_coord[i][0] == 0]
-bxn = [i for i in range(nn) if g_coord[i][0] == lx]
-bz0 = [i for i in range(nn) if g_coord[i][1] == 0]
-bzn = [i for i in range(nn) if g_coord[i][1] == lz]
+bx0 = [i for i in range(nn) if g_coord[i,0] == 0]
+bx0 = np.array(bx0)
+bxn = [i for i in range(nn) if g_coord[i,0] == lx]
+bxn = np.array(bxn)
+bz0 = [i for i in range(nn) if g_coord[i,1] == 0]
+bz0 = np.array(bz0)
+bzn = [i for i in range(nn) if g_coord[i,1] == lz]
+bzn = np.array(bzn)
 # fixed boundary equations along with their values
-bcdof = [nf[0][i] for i in bx0] + [nf[0][i] for i in bxn] + [nf[1][i] for i in bz0]
+bcdof = [nf[0,i] for i in bx0] + [nf[0,i] for i in bxn] + [nf[1,i] for i in bz0]
+bcdof = np.array(bcdof)
 bcval = [0 for i in bx0] + [-bvel for i in bxn] + [0 for i in bz0]
-print(g_coord)
+bcval = np.array(bcval)
+#print(g_coord)
 #------------------------------------------------------------
 # establish phases
 #-----------------------------------------------------------
@@ -169,15 +182,20 @@ for i in range(nels):
         phase[i] = 2  # bottom
     elif g_coord[g_num[i][8]-1][1] <= layer_top and g_coord[g_num[i][8]-1][1] >= layer_bot:
         phase[i] = 3  # layer
+phase = np.array(phase)
 phase[nze*nxe//2-nze//2] = 4  # inclusion
 #-------------------------------------------
 # perturb boundaries of layer
 #-------------------------------------------
-iit = [i for i in range(nn) if g_coord[i][1] == layer_bot]  # nodes on top of layer
-iib = [i for i in range(nn) if g_coord[i][1] == layer_top]  # nodes on bottom of layer
+iit = [i for i in range(nn) if g_coord[i,1] == layer_bot]  # nodes on top of layer
+iit = np.array(iit)
+iib = [i for i in range(nn) if g_coord[i,1] == layer_top]  # nodes on bottom of layer
+iib = np.array(iib)
 ii = iit + iib  # combined nodes
 import random
-g_coord = [[g_coord[i][0], g_coord[i][1]+dz*0.05*(random.random()-0.5)] if i in ii else g_coord[i] for i in range(nn)]
+g_coord = [[g_coord[i,0], g_coord[i,1]+dz*0.05*(random.random()-0.5)] if i in ii else g_coord[i] for i in range(nn)]
+g_coord = np.array(g_coord)
+print(g_coord)
 #-----------------------------------------
 # integration data and shape functions
 #----------------------------------------
@@ -186,12 +204,15 @@ import math
 points = np.array([[-math.sqrt(0.6), math.sqrt(0.6), -math.sqrt(0.6)], [0, 0, math.sqrt(0.6)]])
 #print(points.shape)
 points = np.tile(points,(1,3))
-print(points.shape)
+#print(points.shape)
 #erro detectado - só ha 2 vetores - é preciso 9 vetores
 # Gauss weights for nip=3x3
 w = [5/9, 8/9, 5/9]
+w = np.array(w)
 v = [[5/9*w[i] for i in range(3)], [8/9*w[i] for i in range(3)], [5/9*w[i] for i in range(3)]]
-wts = [v[i][j] for i in range(3) for j in range(3)]
+v = np.array(v)
+wts = [v[i,j] for i in range(3) for j in range(3)]
+wts = np.array(wts)
 # evaluate shape functions and their derivatives
 # at integration points and save the results
 fun_s = np.zeros((nip,nod))
@@ -240,10 +261,13 @@ for n in range(ntime):
     error = eps*2  # initialise error
     iters = 0  # initialise iteration counter
     displ = [0 for i in range(sdof)]  # initialise solution vector
+    displ = np.array(displ)
     while error > eps and iters < limit:
         iters = iters + 1  # increment iteration counter
         lhs = [[0 for i in range(sdof)] for j in range(sdof)]  # initialised global stiffness matrix
+        lhs = np.array(lhs)
         b = [0 for i in range(sdof)]  # initialised global load vector
+        b = np.array(b)
         #-----------------------------------------
         # element integration and assembly
         #-----------------------------------------
@@ -251,9 +275,9 @@ for n in range(ntime):
             num = g_num[iel]  # list of element nodes
             g = g_g[:, iel]  # element equation numbers
             coord = np.array([g_coord[num[i]-1] for i in range(nod)])  # nodal coordinates
-            KM = [[0 for i in range(ntot)] for j in range(ntot)]  # initialise stiffness matrix
-            R = [0 for i in range(ntot)]  # initialise stress load vector
-            uv = [displ[g[i]-1] for i in range(ntot)]  # current nodal velocities
+            KM = np.zeros((ntot, ntot)) #np.array([[0 for i in range(ntot)] for j in range(ntot)])  # initialise stiffness matrix
+            R = np.array([0 for i in range(ntot)])  # initialise stress load vector
+            uv = np.array([displ[g[i]-1] for i in range(ntot)])  # current nodal velocities
             # retieve material properties for the current element
             smod = smod_v[phase[iel]-1]  # shear modulus
             K = bmod_v[phase[iel]-1]  # bulk modulus
@@ -267,15 +291,15 @@ for n in range(ntime):
             od = dt*(-2*smod*mu + 3*mu*K + 3*dt*smod*K)
             d = 3*(mu + dt*smod)
             ed = 2*mu*dt*smod/(2*mu + dt*smod)
-            dee = [[di/d, od/d, 0], [od/d, di/d, 0], [0, 0, ed]]
+            dee = np.array([[di/d, od/d, 0], [od/d, di/d, 0], [0, 0, ed]])
             # stress matrix
             di = 3*mu + dt*smod
             od = dt*smod
             ed = 2 * mu / (2 * mu + dt * smod)
-            dees = [[di/d, od/d, 0], [od/d, di/d, 0], [0, 0, ed]]
+            dees = np.array([[di/d, od/d, 0], [od/d, di/d, 0], [0, 0, ed]])
             for k in range(nip):  # integration loop
                 fun = fun_s[:, k]  # shape functions
-                fune = [0 for i in range(ntot)]  # extended shape function array
+                fune = np.zeros(ntot)#[0 for i in range(ntot)]  # extended shape function array
                 fune[1::2] = fun  # shape function for z-dof only
                 # shape functions in local coords
                 der = der_s[:, :, k]
@@ -285,17 +309,25 @@ for n in range(ntime):
                 #print(jac.shape)
                 jac = der@coord
                 #print(jac)
-                detjac = jac[0][0]*jac[1][1] - jac[0][1]*jac[1][0]  # det. of the Jacobian
+                #detjac = jac[0][0]*jac[1][1] - jac[0][1]*jac[1][0]  # det. of the Jacobian
+                detjac = np.linalg.det(jac)
                 dwt = detjac*wts[k]  # detjac x weight
-                invjac = [[jac[1][1]/detjac, -jac[0][1]/detjac], [-jac[1][0]/detjac, jac[0][0]/detjac]]  # inverse of the Jacobian
-                deriv = [[sum([invjac[i][j]*der[j][k] for j in range(nod)]) for k in range(ndof)] for i in range(ndof)]  # shape functions in physical coords
+                #invjac = [[jac[1][1]/detjac, -jac[0][1]/detjac], [-jac[1][0]/detjac, jac[0][0]/detjac]]  # inverse of the Jacobian
+                invjac = np.linalg.inv(jac)
+                deriv = [[sum([invjac[i][j]*der[j][k] for j in range(nod)]) for k in range(ndof)] for i in range(ndof)] 
+                deriv = np.array(deriv)
+                 # shape functions in physical coords
                 bee = [[0 for i in range(ntot)] for j in range(nst)]  # kinematic matrix
-                bee[0][0::2] = deriv[0]
-                bee[1][1::2] = deriv[1]
-                bee[2][0::2] = deriv[1]
-                bee[2][1::2] = deriv[0]
-                strain_rate = [sum([bee[i][j]*uv[j] for j in range(ntot)]) for i in range(nst)]  # strain rates
-                stress = [sum([dee[i][j]*strain_rate[j] for j in range(nst)]) + sum([dees[i][j]*tensor0[j][k][iel] for j in range(nst)]) for i in range(nst)]  # stresses
+                bee = np.array(bee)
+                bee[0,0::2] = deriv[0]
+                bee[1,1::2] = deriv[1]
+                bee[2,0::2] = deriv[1]
+                bee[2,1::2] = deriv[0]
+                strain_rate = [sum([bee[i,j]*uv[j] for j in range(ntot)]) for i in range(nst)]  # strain rates
+                strain_rate = np.array(strain_rate)
+                stress = [sum([dee[i,j]*strain_rate[j] for j in range(nst)]) + sum([dees[i,j]*tensor0[j,k,iel] for j in range(nst)]) for i in range(nst)]
+                stress = np.array(stress)
+                  # stresses
                 if plasticity:  # do only if plasticity included
                     tau = ((1/4*(stress[0]-stress[1])*2+stress[2])*(1/2))  # tau star
                     sigma = 1/2*(stress[0]+stress[1])  # sigma star
@@ -314,16 +346,19 @@ for n in range(ntime):
                         stress[1] = szz_new
                         stress[2] = sxz_new
                 if iters == 1:  # normal rhs stress
-                    stress_rhs = [dees[i][j]*tensor0[j][k][iel] for i in range(nst)]
+                    stress_rhs = [dees[i,j]*tensor0[j,k,iel] for i in range(nst)]
+                    stress_rhs = np.array(stress_rhs)
                 else:  # total stress
                     stress_rhs = stress
-                KM = [[KM[i][j] + sum([bee[i][l]*dee[l][m]*bee[j][m]*dwt for l in range(nst)]) for j in range(ntot)] for i in range(ntot)]  # element stiffness matrix
-                R = [R[i] + (sum([bee[i][j]*stress_rhs[j] for j in range(nst)]) + sum([fune[i]*rhog for i in range(ntot)]))*dwt for i in range(ntot)]  # load vector
+                KM = [[KM[i,j] + sum([bee[i,l]*dee[l,m]*bee[j,m]*dwt for l in range(nst)]) for j in range(ntot)] for i in range(ntot)]  # element stiffness matrix
+                KM = np.array(KM)
+                R = [R[i] + (sum([bee[i,j]*stress_rhs[j] for j in range(nst)]) + sum([fune[i]*rhog for i in range(ntot)]))*dwt for i in range(ntot)]  # load vector
+                R = np.array(R)
                 tensor[:, k, iel] = stress  # stresses at integration point
             # assemble global stiffness matrix and rhs vector
             for i in range(ntot):
                 for j in range(ntot):
-                    lhs[g[i]-1][g[j]-1] += KM[i][j]  # stiffness matrix
+                    lhs[g[i]-1,g[j]-1] += KM[i,j]  # stiffness matrix
             for i in range(ntot):
                 b[g[i]-1] -= R[i]  # load vector
         #-------------------------------------------------
@@ -331,22 +366,24 @@ for n in range(ntime):
         #-------------------------------------------------
         # apply boundary conditions
         for i in bcdof:
-            lhs[i-1] = [0 for j in range(sdof)]
-            lhs[i-1][i-1] = 1
+            lhs[i-1] = np.array([0 for j in range(sdof)])
+            lhs[i-1,i-1] = 1
         if iters == 1:
             b = [bcval[i-1] if i in bcdof else b[i-1] for i in range(sdof)]
         else:
             b = [0 if i in bcdof else b[i-1] for i in range(sdof)]
+        b=np.array(b)
         from scipy.sparse import csc_matrix
         from scipy.sparse.linalg import spsolve
         displ_inc = spsolve(csc_matrix(lhs), b)  # solve for velocity increment
         displ = [displ[i] + displ_inc[i] for i in range(sdof)]  # update total velocity
+        displ = np.array(displ)
         error = max(abs(displ_inc))/max(abs(displ))  # estimate error
     #----------------------------------------------
     # end of iterations
     #------------------------------------------------
     # update mesh coordinates
-    g_coord = [[g_coord[i][0] + dt*displ[nf[0][i]-1], g_coord[i][1] + dt*displ[nf[1][i]-1]] for i in range(nn)]
+    g_coord = np.array([[g_coord[i,0] + dt*displ[nf[0,i]-1], g_coord[i,1] + dt*displ[nf[1,i]-1]] for i in range(nn)])
     tensor0 = tensor  # save stresses
     shortening_percent = (1 - (max([g_coord[i][0] for i in range(nn)])-min([g_coord[i][0] for i in range(nn)]))/lx)*100
     #---------------------------------
@@ -404,4 +441,3 @@ for n in range(ntime):
     plt.title('Mean stress (MPa)')
     #------------------------------------------------------
 # end of time integration
-#----------------------------------------------------
